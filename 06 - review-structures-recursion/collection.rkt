@@ -1,0 +1,308 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname collection) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #t)))
+(define-struct magazine (title issue))
+;; A Magazine is a (make-magazine Str Nat)
+
+;; An Index is one of:
+;; *empty
+;; *(cons (list Str (listof Nat)) Index) where (listof Nat is a
+;; non-empty list
+
+;; 3A 
+;; (magazine<? m1 m2) produces true if the first Magazine is
+;;    lexicographically strictly less than the second Magazine
+;;    and false otherwise. If the two Magazines are equal, the
+;;    function should produce false
+;; magazine<?: Magazine Magazine -> Bool
+;; Examples:
+(check-expect (magazine<? (make-magazine "Dragon" 27)
+                          (make-magazine "Dungeon" 6)) true)
+(check-expect (magazine<? (make-magazine "Dungeon" 6)
+                          (make-magazine "Dungeon" 6)) false)
+
+(define (magazine<? m1 m2)
+  (cond
+    [(or (empty? m1)
+         (empty? m2)) false]
+    [(and (string=? (magazine-title m1)(magazine-title m2))
+          (= (magazine-issue m1)(magazine-issue m2))) false]
+    [(string=? (magazine-title m1)(magazine-title m2)) true]
+    [else
+     (string<? (magazine-title m1)(magazine-title m2))]))
+
+;; Tests:
+(check-expect (magazine<? (make-magazine "Dragon" 22)
+                          (make-magazine "Dragon" 27)) true)
+(check-expect (magazine<? (make-magazine "Beaver" 29)
+                          (make-magazine "Ants" 26)) false)
+
+;; 3B
+;; (sort-magazines maglst) produces a sorted (listof Magazine)
+;;    according to magazine<?
+;; sort-magazines: (listof Magazine) -> (listof Magazine)
+;; Examples:
+(check-expect (sort-magazines
+               (list (make-magazine "Dungeon" 6)
+                     (make-magazine "Dragon" 27)))
+              (list (make-magazine "Dragon" 27)
+                    (make-magazine "Dungeon" 6)))
+(check-expect (sort-magazines
+               (list (make-magazine "Vane" 67)
+                     (make-magazine "Beaver" 78)
+                     (make-magazine "Pig" 90)))
+              (list (make-magazine "Beaver" 78)
+                    (make-magazine "Pig" 90)
+                    (make-magazine "Vane" 67)))
+
+(define (sort-magazines maglst)
+  (cond
+    [(empty? maglst) empty]
+    [else
+     (insert-magazines (first maglst)
+                       (sort-magazines (rest maglst)))]))
+
+(define (insert-magazines fn rn)
+  (cond
+    [(empty? rn)(cons fn empty)]
+    [(string=? (magazine-title fn)
+               (magazine-title (first rn)))
+     (cons fn rn)]
+    [(string<? (magazine-title fn)
+               (magazine-title (first rn)))
+     (cons fn rn)] 
+    [else
+     (cons (first rn)(insert-magazines fn (rest rn)))]))
+
+;; Tests:
+(check-expect (sort-magazines
+               (list (make-magazine "Dolly" 65)
+                     (make-magazine "Lemon" 23)))
+              (list (make-magazine "Dolly" 65)
+                    (make-magazine "Lemon" 23)))
+(check-expect (sort-magazines
+               (list (make-magazine "Math" 66)
+                     (make-magazine "Science" 88)
+                     (make-magazine "Engineering" 12)
+                     (make-magazine "Enviornment" 22)))
+              (list (make-magazine "Engineering" 12)
+                    (make-magazine "Enviornment" 22)
+                    (make-magazine "Math" 66)
+                    (make-magazine "Science" 88)))
+
+;; 3C
+;; (need-between maglst str lownat highnat) produces a sorted
+;;    (listof Nat) corresponding to the magazine issues, with the
+;;    consumed title, between the low and high bounds (inclusive)
+;;    not found in the consumed (listof Magazine)
+;; requires: low issue <= high issue bound
+;; need-between: (listof Magazine) Str Nat Nat -> (listof Nat)
+;; Examples:
+(check-expect (need-between (list (make-magazine "Dragon" 2)
+                                  (make-magazine "Dragon" 3))
+                            "Dragon" 2 3) empty)
+(check-expect (need-between (list (make-magazine "Dragon" 2)
+                                  (make-magazine" Dragon" 3))
+                            "Dungeon" 2 3) (list 2 3))
+
+(define (need-between maglst str lownat highnat)
+  (cond
+    [(empty? maglst) empty]
+    [(and (string=? (magazine-title (first maglst)) str)
+          (and (>= (magazine-issue (first maglst)) lownat)
+               (<= (magazine-issue (first maglst)) highnat)))
+     (need-between (rest maglst) str lownat highnat)]
+    [(and (>= (magazine-issue (first maglst)) lownat)
+          (<= (magazine-issue (first maglst)) highnat))
+     (cons (magazine-issue (first maglst))
+           (need-between (rest maglst) str lownat highnat))]
+    [else
+     (need-between (rest maglst) str lownat highnat)]))
+
+;; Tests:
+(check-expect (need-between (list (make-magazine "Dragon" 2)
+                                  (make-magazine "Dragon" 3)
+                                  (make-magazine "Dragon" 4))
+                            "Dragon" 5 6) empty)
+(check-expect (need-between (list (make-magazine "Beaver" 3)
+                                  (make-magazine "Poetry" 98)
+                                  (make-magazine "Vaseline" 21))
+                            "Poetry" 96 99) empty)
+(need-between (list (make-magazine "Dragon" 2)
+                    (make-magazine "Dragon" 3)) "Dragon" 1 3)
+
+;; 3D
+;; (magazine-lists-equal? maglst1 maglst2) produces either true or
+;;    false if the two lists are the same
+;; requires: no duplicate magazines in each list, individually
+;; magazine-lists-equal? (listof Magazine) (listof Magazine) -> Bool
+;; Examples:
+(check-expect (magazine-lists-equal?
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "Dragon" 3)
+                     (make-magazine "Deer" 26))
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "Dragon" 3)
+                     (make-magazine "Deer" 29))) false)
+(check-expect (magazine-lists-equal?
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "Dragon" 3))
+               (list (make-magazine "Whale" 1)
+                     (make-magazine "Dragon" 3))) false)
+
+(define (magazine-lists-equal? maglst1 maglst2)
+  (cond
+    [(empty? maglst1) true]
+    [(and (string=? (magazine-title (first maglst1))
+                    (magazine-title (first maglst2)))
+          (= (magazine-issue (first maglst1))
+             (magazine-issue (first maglst2))))
+     (magazine-lists-equal? (rest maglst1) (rest maglst2))]
+    [else
+     false]))                             
+
+;; Tests:
+(check-expect (magazine-lists-equal?
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "Dragon" 3))                                     
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "Dragon" 3))) true)
+(check-expect (magazine-lists-equal?
+               (list (make-magazine "Dragon" 2))
+               (list (make-magazine "Dolphin" 2))) false)
+
+;; 3E
+;; (merge-collections maglst1 maglst2) produces the sorted
+;;    (listof Magazine)
+;; merge-collections: (listof Magazine) (listof Magazine) ->
+;;                    (listof Magazine)
+;; Examples:
+(check-expect (merge-collections
+               (list (make-magazine "Dragon" 2))
+               (list (make-magazine "Dragon" 3)))
+              (list (make-magazine "Dragon" 2)
+                    (make-magazine "Dragon" 3)))
+(check-expect (merge-collections
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "Dragon" 3))
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "Dragon" 3)))
+              (list (make-magazine "Dragon" 2)
+                    (make-magazine "Dragon" 3)))
+
+(define (merge-collections maglst1 maglst2)
+  (no-duplst (sort-magazines (append maglst1 maglst2))))
+
+(define (no-duplst maglst)
+  (cond
+    [(empty? (rest maglst)) maglst]
+    [(member? (first maglst)(no-duplst (rest maglst)))
+     (no-duplst (rest maglst))]
+    [else
+     (cons (first maglst)(no-duplst (rest maglst)))]))
+
+;; Tests:
+(check-expect (merge-collections
+               (list (make-magazine "Winnie" 67)
+                     (make-magazine "Dinosaur" 22)
+                     (make-magazine "Rainbow" 11)
+                     (make-magazine "Piglet" 6))
+               (list (make-magazine "Movie" 77)
+                     (make-magazine "Vaseline" 45)
+                     (make-magazine "Dino" 22)
+                     (make-magazine "Rainbow" 11)))
+              (list
+               (make-magazine "Dino" 22)
+               (make-magazine "Dinosaur" 22)
+               (make-magazine "Movie" 77)
+               (make-magazine "Piglet" 6)
+               (make-magazine "Rainbow" 11)
+               (make-magazine "Vaseline" 45)
+               (make-magazine "Winnie" 67)))
+
+(check-expect (merge-collections
+               (list (make-magazine "Dragon" 2)
+                     (make-magazine "GoTrain" 9))
+               (list (make-magazine "Basketball" 34)
+                     (make-magazine "Dragon" 2)))
+              (list (make-magazine "Basketball" 34)
+                    (make-magazine "Dragon" 2)
+                    (make-magazine "GoTrain" 9)))  
+
+;; 3F
+;; (create-index maglst) produces an Index, data defintion given
+;;    above
+;; create-index: (listof Magazine) -> Index
+;; Examples:
+
+                    
+                           
+(define (create-index maglst)
+  (cond
+    [(empty? maglst) empty]
+    [(empty? (rest maglst))
+     (cons (magazine-title (first maglst))
+           (cons (magazine-issue (first maglst)) empty))]
+    [(string=? (magazine-title (first maglst))
+               (magazine-title (second maglst)))
+     (cons (magazine-issue (first maglst))
+           (create-index (rest maglst)))]
+    [else
+     (cons (magazine-issue (first maglst)) 
+           (create-index (rest maglst)))])) 
+
+(create-index (list (make-magazine "Dragon" 1)
+                    (make-magazine "Dragon" 10)
+                    (make-magazine "Omni" 19)))  
+
+;; Tests:
+
+
+;; 3G
+;; (own-magazine? index mag) produces true if and only if the magazine
+;;    is in the index
+;; own-magazine? Index Magazine -> Bool
+;; Examples:
+(check-expect (own-magazine? (list (list "Dragon" (list 1 2 3))
+                                   (list "Omni" (list 1 2 3))) 
+                             (make-magazine "Dragon" 4)) false)
+(check-expect (own-magazine? (list (list "Dragon" (list 1 2 3))
+                                   (list "Omni" (list 1 2 3)))
+                             (make-magazine "Omni" 2)) true)
+
+(define (own-magazine? index mag)
+  (cond
+    [(empty? index) false]
+    [else
+     (searchup (first (first index))
+               (second (first index)) index mag)]))
+
+(define (searchup name issuelst index mag)
+  (cond
+    [(empty? issuelst) false]
+    [(and (string=? (magazine-title mag) name)
+          (= (magazine-issue mag) (first issuelst))) true]
+    [(string=? (magazine-title mag) name)
+     (searchup name (rest issuelst) index mag)]
+    [else
+     (own-magazine? (rest index) mag)]))  
+
+;; Tests:
+(check-expect (own-magazine? (list (list "Dragon" (list 1 2 3 4))
+                                   (list "Omni" (list 5 6 7))
+                                   (list "Dracula" (list 23)))
+                             (make-magazine "Hollywood" 2)) false)
+(check-expect (own-magazine? (list (list "Dragon" (list 1)))
+                             (make-magazine "Omni" 2)) false) 
+
+;; 3H
+;; (need-magazines index str nat) produces a Str where the string
+;;    starts with the magazine title, followed immediately by a colon
+;;    and one space, then one of the following: {a list of all of
+;;    the issue numbers, "completed", or "need all"}
+;; need-magazines: Index Str Nat -> Str
+;; Examples:
+
+(define (need-magazines index str nat) 0) 
+
+;; Tests:

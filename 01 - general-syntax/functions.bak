@@ -1,0 +1,48 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname functions) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+;;
+;; ***************************************************
+;; Kelvin Luu (20606596)
+;; CS 135 Winter 2016
+;; Assignment 01, Problem 1
+;; ***************************************************
+;;
+(define g 9.8)
+;; 1A
+;; (stirling n) produces the stirling's upper bound
+;;   based on the value of n
+;; stirling: Num -> Num
+;; Examples:
+(check-expect (stirling 0) 0)
+              
+(define (stirling n)
+  (* (expt n (+ n (/ 1 2)))(exp (- 1 n))))
+;; Tests:
+(check-expect (stirling 1) 1)
+
+;; 1B
+;; (hm x y z) produces the harmonic mean of the
+;;   three values of x,y,and z
+;;   where, x,y and z cannot be zero 
+;; hm: Num Num Num -> Num
+;; Examples:
+(check-expect (hm 2 2 2) 2)
+
+(define (hm x y z)
+  (/ 3 (+ (/ 1 x)(/ 1 y)(/ 1 z))))
+
+;; Tests:
+(check-expect (hm 1 1 1) 1)
+
+;; 1C
+;; (height v t) produces the ballistic motion value
+;;   based on the v,and t value
+;; Examples:
+(check-expect (height 1 2) -17.6)
+
+(define (height v t)
+  (- (* v t)(* (/ 1 2) g (expt t 2))))
+
+;; Tests:
+(check-expect (height 1 1) -3.9)

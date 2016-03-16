@@ -1,0 +1,97 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname area) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+
+(define-struct 3dposn (x y z))
+
+;; (a-side c1 c2) produces the distance between c1 and c2 using the
+;;    distance formula, resulting in a representation of length a
+;; a-side: 3dPosn 3dPosn -> Num
+;; Examples:
+(check-within (a-side
+               (make-3dposn 0 0 1)
+               (make-3dposn 0 1 0)) 0.001 1.414)
+
+(define (a-side c1 c2)
+  (sqrt (+ (sqr (- (3dposn-x c2)(3dposn-x c1)))
+           (sqr (- (3dposn-y c2)(3dposn-y c1)))
+           (sqr (- (3dposn-z c2)(3dposn-z c1))))))
+
+;; Tests:
+(check-expect (a-side
+               (make-3dposn 0 0 0)
+               (make-3dposn 0 0 0)) 0)
+
+;; (b-side c2 c3) produces the distance between c2 and c3 using the
+;;    distance formula, resulting in a representation of length a
+;; b-side: 3dPosn 3dPosn -> Num
+;; Examples:
+(check-within (b-side
+               (make-3dposn 0 0 1)
+               (make-3dposn 0 1 0)) 0.001 1.414)
+
+(define (b-side c2 c3)
+  (sqrt (+ (sqr (- (3dposn-x c3)(3dposn-x c2)))
+           (sqr (- (3dposn-y c3)(3dposn-y c2)))
+           (sqr (- (3dposn-z c3)(3dposn-z c2))))))
+
+;; Tests:
+(check-expect (b-side
+               (make-3dposn 0 0 0)
+               (make-3dposn 0 0 0)) 0)
+
+;; (c-side c1 c3) produces the distance between c1 and c3 using the
+;;    distance formula, resulting in a representation of length a
+;; c-side: 3dPosn 3dPosn -> Num
+;; Examples:
+(check-within (c-side
+               (make-3dposn 0 0 1)
+               (make-3dposn 0 1 0)) 0.001 1.414)
+
+(define (c-side c1 c3)
+  (sqrt (+ (sqr (- (3dposn-x c3)(3dposn-x c1)))
+           (sqr (- (3dposn-y c3)(3dposn-y c1)))
+           (sqr (- (3dposn-z c3)(3dposn-z c1))))))
+
+;; Tests:
+(check-expect (c-side
+               (make-3dposn 0 0 0)
+               (make-3dposn 0 0 0)) 0)
+
+;; A 3dPosn is a (make-3dposn Num Num Num)
+;; (area-triangle c1 c2 c3) produces either the area of a triangle
+;;   formed by the coordinates or 'undefined if the coordinates do
+;;   not form a triangle
+;; area-triangle: 3dPosn 3dPosn 3dPosn -> (anyof Num 'undefined)
+;; Examples:
+(check-within (area-triangle
+               (make-3dposn 0 0 1)
+               (make-3dposn 0 1 0)
+               (make-3dposn 1 0 0)) 0.001 0.866)
+
+(define (area-triangle c1 c2 c3)
+  (cond
+    [(= (* 0.25
+        (sqrt (- (+ (* 2 (sqr (b-side c2 c3))(sqr (c-side c1 c3)))
+                    (* 2 (sqr (c-side c1 c3))(sqr (a-side c1 c2)))
+                    (* 2 (sqr (a-side c1 c2))(sqr (b-side c2 c3))))
+                 (expt (a-side c1 c2) 4)
+                 (expt (b-side c2 c3) 4)
+                 (expt (c-side c1 c3) 4)))) 0) 'undefined]
+    [else (* 0.25
+        (sqrt (- (+ (* 2 (sqr (b-side c2 c3))(sqr (c-side c1 c3)))
+                    (* 2 (sqr (c-side c1 c3))(sqr (a-side c1 c2)))
+                    (* 2 (sqr (a-side c1 c2))(sqr (b-side c2 c3))))
+                 (expt (a-side c1 c2) 4)
+                 (expt (b-side c2 c3) 4)
+                 (expt (c-side c1 c3) 4))))]))
+
+;; Tests:
+(check-expect (area-triangle
+               (make-3dposn 0 0 0)
+               (make-3dposn 0 0 0)
+               (make-3dposn 0 0 0)) 'undefined)
+(check-within (area-triangle
+               (make-3dposn 0 1 2)
+               (make-3dposn 1 9 0)
+               (make-3dposn 2 0 8)) 0.001 25.024)

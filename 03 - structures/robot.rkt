@@ -1,0 +1,74 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname robot) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+;; (robot metro dir turn dist) produces a new Posn that records
+;;   the robots new position after turning and moving the given
+;;   initial position and orientation
+;; requires: dir: {'north, 'east, 'south, or 'west}
+;;           turn: {'left, 'right, or 'noturn}
+;;           dist: dist>=0 
+;; robot: Posn Sym Sym Nat-> Posn
+;; Examples:
+(check-expect (robot (make-posn 0 0) 'north 'noturn 1)
+              (make-posn 0 1))
+(check-expect (robot (make-posn 0 0) 'south 'noturn 1)
+              (make-posn 0 -1))
+
+(define (robot metro dir turn dist)
+  (cond
+    [(symbol=? dir 'north)
+     (cond
+       [(symbol=? turn 'left)
+        (make-posn (- (posn-x metro) dist)(posn-y metro))]
+       [(symbol=? turn 'right) 
+        (make-posn (+ (posn-x metro) dist)(posn-y metro))]
+       [(symbol=? turn 'noturn)
+        (make-posn (posn-x metro)(+ (posn-y metro) dist))])]
+    [(symbol=? dir 'east)
+     (cond
+       [(symbol=? turn 'left)
+        (make-posn (posn-x metro)(+ (posn-y metro) dist))]
+       [(symbol=? turn 'right)
+        (make-posn (posn-x metro)(- (posn-y metro) dist))]
+       [(symbol=? turn 'noturn)
+        (make-posn (+ (posn-x metro) dist)(posn-y metro))])]
+    [(symbol=? dir 'south)
+     (cond
+       [(symbol=? turn 'left)
+        (make-posn (+ (posn-x metro) dist)(posn-y metro))]
+       [(symbol=? turn 'right)
+        (make-posn (- (posn-x metro) dist)(posn-y metro))]
+       [(symbol=? turn 'noturn)
+        (make-posn (posn-x metro)(- (posn-y metro) dist))])]
+    [(symbol=? dir 'west)
+     (cond
+       [(symbol=? turn 'left)
+        (make-posn (posn-x metro)(- (posn-y metro) dist))]
+       [(symbol=? turn 'right)
+        (make-posn (posn-x metro)(+ (posn-y metro) dist))]
+       [(symbol=? turn 'noturn)
+        (make-posn (- (posn-x metro) dist)(posn-y metro))])])) 
+
+;; Tests:
+(check-expect (robot (make-posn -3 5) 'west 'right 2)
+              (make-posn -3 7))
+(check-expect (robot (make-posn -3 5) 'west 'left 2)
+              (make-posn -3 3))
+(check-expect (robot (make-posn -3 5) 'east 'right 2)
+              (make-posn -3 3))
+(check-expect (robot (make-posn -3 5) 'east 'left 2)
+              (make-posn -3 7))
+(check-expect (robot (make-posn -3 5) 'north 'right 2)
+              (make-posn -1 5))
+(check-expect (robot (make-posn -3 5) 'north 'left 2)
+              (make-posn -5 5))
+(check-expect (robot (make-posn -3 5) 'south 'right 2)
+              (make-posn -5 5))
+(check-expect (robot (make-posn -3 5) 'south 'left 2)
+              (make-posn -1 5))
+(check-expect (robot (make-posn -3 5) 'east 'noturn 2)
+              (make-posn -1 5))
+(check-expect (robot (make-posn -3 5) 'south 'noturn 2)
+              (make-posn -3 3)) 
+(check-expect (robot (make-posn -3 5) 'west 'noturn 2)
+              (make-posn -5 5))

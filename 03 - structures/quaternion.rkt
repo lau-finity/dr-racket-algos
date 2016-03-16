@@ -1,0 +1,69 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-reader.ss" "lang")((modname quaternion) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #f)))
+(define-struct quaternion (cc ic jc kc))
+;; A Quaternion is a (make-quaternion Num Num Num Num)
+;;(quat-calc a b c i j k c2 i2 j2 k2) Determines the product
+;;    of the quaterion by multiplying the elements of 2 given
+;;    quanterions using the distrbutive law
+;; quat-calc : Num Num Num Num Num Num Num Num Num Num -> Quaternion
+;; requires : a != 0
+;;          : b != 0
+
+;; Examples:
+(check-expect (quat-calc -1 -1 2 5 9 9 5 9 9 9)
+              (make-quaternion -197 43 99 27))
+(check-expect (quat-calc  2 9 9 9 9 9 9 9 9 9)
+              (make-quaternion -486 162 162 162))
+
+(define (quat-calc a b c i j k c2 i2 j2 k2)
+  (make-quaternion
+   (- (+ (* c c2) (* i i2 a) (* j j2 b)) (* k k2 a b))
+   
+   (- (+ (* c i2) (* i c2) (* k j2 b)) (* j k2 b))
+   
+   (- (+ (* c j2) (* i k2 a) (* j c2)) (* k i2 a))
+   
+   (+ (- (+ (* c k2) (* i j2)) (* j i2)) (* k c2))))
+
+;; Tests
+(check-expect (quat-calc -1 5 0 0 0 0 0 0 0 0)
+              (make-quaternion 0 0 0 0))
+(check-expect (quat-calc 5 5 2 2 5 8 9 9 1 1)
+              (make-quaternion -67 51 -303 31))
+
+;;(quat-mult a b q1 q2) Splits the elements of q1 and q2 into
+;;     into their i,j,k elements, then calculates the product of
+;;     the two quaterions using the distributive law and the
+;;     multiplication table
+;; quat-mult : Num Num Quaternion Quaternion -> Quaternion
+;; requires : a != 0
+;;          : b != 0
+
+;; Examples:
+(check-expect (quat-mult -1 -1 (make-quaternion 2 5 9 9)
+                         (make-quaternion 5 9 9 9))
+              (make-quaternion -197 43 99 27))
+(check-expect (quat-mult 8 5 (make-quaternion 2 3 1 6)
+                         (make-quaternion 8 6 0 6))
+              (make-quaternion -1280 6 -136 54))
+
+
+(define (quat-mult a b q1 q2)
+  (quat-calc a b (quaternion-cc q1)
+             (quaternion-ic q1)
+             (quaternion-jc q1)
+             (quaternion-kc q1)
+             (quaternion-cc q2)
+             (quaternion-ic q2)
+             (quaternion-jc q2)
+             (quaternion-kc q2)))
+
+
+;; Tests:
+(check-expect (quat-mult -1 -1 (make-quaternion 2 3 0 0)
+                         (make-quaternion 5 6 0 0))
+              (make-quaternion -8 27 0 0))
+(check-expect (quat-mult 5 6 (make-quaternion 0 3 1 6)
+                         (make-quaternion 5 6 1 6))
+              (make-quaternion -984 15 -85 27))

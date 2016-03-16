@@ -1,0 +1,135 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname student) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #t)))
+;; 2A (is this structural recursion?)
+;; (tallest namelst numlst) produces the name of the student who is
+;;    the tallest, if it is a tie, produce the name of the student
+;;    with that maximal height
+;; requires: both lists to be the same length and both are non-empty
+;; tallest: (listof Sym) (listof Num) -> Sym
+;; Examples:
+(check-expect (tallest '(Quincy Hagey Pascal)'( 176 201 200)) 'Hagey)
+(check-expect (tallest '(Joe Bill Lisa Meg)'(200 170 150 175)) 'Joe)
+
+(define (find-long namelst numlst max-num)
+  (cond
+    [(= max-num (first numlst))(first namelst)]
+    [else
+     (find-long (rest namelst)(rest numlst) max-num)]))
+
+(define (tallest-list lon)
+  (cond
+    [(empty? (rest lon))(first lon)]
+    [(> (first lon)(tallest-list (rest lon)))(first lon)]
+    [else
+     (tallest-list (rest lon))]))
+
+(define (tallest namelst numlst)
+  (find-long namelst numlst (tallest-list numlst)))
+
+;; Tests:
+(check-expect (tallest '(Billy Jimmy Tim)'(100 183 163)) 'Jimmy)
+(check-expect (tallest '(Bosco Taylor Jackie)'(134 132 134)) 'Bosco)
+
+;; 2B
+;; (shortest namelst numlst) produces the name of the student who is
+;;    the shortest, in the case of a tie, produce the name of the
+;;    first student in the list with that minimal height
+;; requires: both lists are the same length and both are non-empty
+;; shortest: (listof Sym) (listof Num) -> Sym
+;; Examples:
+(check-expect (shortest '(Joe Bill Lisa Meg)'(145 170 150 175)) 'Joe)
+(check-expect (shortest '(Bosco Taylor Jackie)'(134 132 134)) 'Taylor)
+
+(define (find-short namelst numlst max-num)
+  (cond
+    [(= max-num (first numlst))(first namelst)]
+    [else
+     (find-short (rest namelst)(rest numlst) max-num)]))
+
+(define (shortest-list lon)
+  (cond
+    [(empty? (rest lon))(first lon)]
+    [(< (first lon)(shortest-list (rest lon)))(first lon)]
+    [else
+     (shortest-list (rest lon))]))
+
+(define (shortest namelst numlst)
+  (find-short namelst numlst (shortest-list numlst)))
+
+;; Tests:
+(check-expect (shortest '(Quincy Hagey Pascal)'( 176 201 200)) 'Quincy)
+(check-expect (shortest '(Joe Bill Lisa Meg)'(200 170 150 175)) 'Lisa)
+
+;; 2C
+;; (student-al namelst numlst) produces an association list with the
+;;    keys being the student names (symbols) and the values being
+;;    the height of the corresponding student (positive numbers)
+;; requires: lists have the same length
+;; student-al: (listof Sym) (listof Num) -> (listof (list Sym Num))
+;; Examples:
+(check-expect (student-al '(Jen Joan Phil Brian Mel)
+                          '(170 140 165 140 155))
+              '((Jen 170)
+                (Joan 140)
+                (Phil 165)
+                (Brian 140)
+                (Mel 155)))
+(check-expect (student-al '(Jen Joan)
+                          '(170 140))
+              '((Jen 170)
+                (Joan 140)))
+
+(define (student-al los lon)
+  (cond
+    [(empty? los) empty]
+    [else
+     (cons (cons (first los)(cons (first lon) empty))
+           (student-al (rest los)(rest lon)))]))
+
+;; Tests:
+(check-expect (student-al '(Jen)
+                          '(170))
+              '((Jen 170)))
+
+(check-expect (student-al '(Jen Joan Phil Brian)
+                          '(170 140 165 140))
+              '((Jen 170)
+                (Joan 140)
+                (Phil 165)
+                (Brian 140)))
+
+;; 2D
+;; (basketball assoclist height) produces the list of names for those
+;;    students that are at least as tall as the given height, in the
+;;    same order that the names appear in the consumed list
+;; requires: the assoc list must be a list of lists (with the keys
+;;           being the names as symbols and the values being the
+;;           numerical height of the students
+;;           the height must be a positive integer
+;; basketball: (listof (list Sym Num)) Num -> (listof Sym)
+;; Examples:
+(check-expect (basketball '((Bobby 182.5)
+                            (James 150.25)
+                            (Jacky 140)
+                            (Dylan 150)) 121)'(Bobby James Jacky Dylan)) 
+(check-expect (basketball '((Taylor 150.3)) 150.2)'(Taylor))
+
+(define (basketball assoclist height)
+  (cond
+    [(empty? assoclist) empty]
+    [(>= (second (first assoclist)) height)
+     (cons (first (first assoclist))
+           (basketball (rest assoclist) height))]
+    [else
+     (basketball (rest assoclist) height)]))
+
+;; Tests:
+(check-expect (basketball '((George 182.5)
+                            (Jeff 150.25)
+                            (Kim 140)
+                            (Jim 150)) 150.1)'(George Jeff))
+(check-expect (basketball '((Timmy 182.5)
+                            (Winnie 150.25)
+                            (Jason 140)
+                            (Jane 150.1)) 183)'())

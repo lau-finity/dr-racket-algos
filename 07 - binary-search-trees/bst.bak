@@ -1,0 +1,246 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-intermediate-reader.ss" "lang")((modname bst) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #t)))
+(require "a7.rkt")
+
+;; (bst-print sample-bst)
+
+;;
+;; ***************************************************
+;; Kelvin Luu (20606596)
+;; CS 135 Winter 2016
+;; Assignment 07, Problem 1
+;; Allowed Recursion
+;; ***************************************************
+;;
+
+;; A binary search tree (BST) is one of:
+;; * empty
+;; * a Node
+
+;; (define-struct node (key val left right))
+;; A Node is a (make-node Num Str BST BST)
+;; requires: key > every key in left BST
+;; key < every key in right BST
+
+;; An association list (AL) is one of:
+;; * empty
+;; (cons (list Num Str) AL)
+
+;; 1A
+;; (bst-internal-count bst) produces the total number of internal
+;;   nodes in the BST
+;; bst-internal-count: BST -> Num
+;; Examples:
+(check-expect (bst-internal-count
+               empty) 0)
+(check-expect (bst-internal-count
+               (make-node 2 "bears" empty empty)) 0)
+(check-expect (bst-internal-count
+               (make-node 3 "teeth" empty
+                          (make-node 4 "beats" empty empty))) 1)
+
+(define (bst-internal-count bst)
+  (cond
+    [(empty? bst) 0]
+    [(and (empty? (node-left bst))
+          (empty? (node-right bst))) 0]
+    [(empty? (node-left bst))
+     (+ 1 (bst-internal-count (node-right bst)))]
+    [(empty? (node-right bst))
+     (+ 1 (bst-internal-count (node-left bst)))]     
+    [else (+ 1 (bst-internal-count (node-left bst))
+             (+ 1 (bst-internal-count (node-right bst))))]))
+
+;; Tests:
+(check-expect (bst-internal-count
+               (make-node 3 "teeth" (make-node 2 "beats" empty empty)
+                          (make-node 10 "comps" empty empty))) 2)
+(check-expect (bst-internal-count
+               (make-node 3 "teeth" (make-node 2 "beats" empty empty)
+                          empty)) 1)
+(check-expect (bst-internal-count
+               (make-node 5 "5" (make-node 2 "2" empty empty)
+                          empty)) 1)
+;; 1B
+;; (bst-bounded? bst lowb highb) produces true if all keys in the BST
+;;   are greater than or equal to the lower bound and less than or
+;;   equal to the upper bound, and false otherwise
+;; requires: lowb is less than or equal to the highb
+;; bst-bounded? BST Int Int -> Bool
+;; Examples:
+(check-expect (bst-bounded? 
+               (make-node 25 "will" empty
+                          (make-node 45 "billy" empty empty))
+               21 140) true)
+(check-expect (bst-bounded?
+               (make-node 21 "timmy" empty empty)
+               3 7) false)
+(check-expect (bst-bounded?
+               (make-node 25 "patrick" empty
+                          (make-node 19 "toothy" empty empty))
+               19 25) true)
+
+(define (bst-bounded? bst lowb highb)
+  (cond
+    [(empty? bst) true]
+    [(and (>= (node-key bst) lowb)
+          (<= (node-key bst) highb))
+     (and (bst-bounded? (node-left bst) lowb highb)
+          (bst-bounded? (node-right bst) lowb highb))]
+    [else false]))
+
+;; Tests:
+(check-expect (bst-bounded?
+               (make-node 5 "5" (make-node 2 "2" empty empty)
+                          empty) 1 10) true)
+(check-expect (bst-bounded?
+               empty 1 5) true)
+(check-expect (bst-bounded?
+               (make-node 3 "trees" (make-node 1 "b" empty empty)
+                          (make-node 4 "e" empty empty)) 1 2) false)
+
+;; 1C
+;; (bst-add bst key val) produces a BST identital to the consumed BST
+;;   except that the value previously associated with the key is
+;;   replaced by the new value if the key is already present in the BST
+;;   If the key is not in the BST, the new tree is produced with the
+;;   new node in the appropriate place
+;; bst-add: BST Num Str -> BST
+;; Examples:
+(check-expect (bst-add
+               (make-node 5 "5" (make-node 2 "2" empty empty)
+                          empty) 7 "7")
+              (make-node 5 "5" (make-node 2 "2" empty empty)
+                         (make-node 7 "7" empty empty)))
+(check-expect (bst-add
+               empty 2 "10")
+              (make-node 2 "10" empty empty))
+
+(define (bst-add bst key val)
+  (cond
+    [(empty? bst)
+     (make-node key val empty empty)]
+    [(= key (node-key bst))
+     (make-node key val (node-left bst)(node-right bst))]
+    [(< key (node-key bst)) 
+     (make-node (node-key bst)
+                (node-val bst)
+                (bst-add (node-left bst) key val)
+                (node-right bst))] 
+    [(> key (node-key bst)) 
+     (make-node (node-key bst)
+                (node-val bst)
+                (node-left bst)
+                (bst-add (node-right bst) key val))])) 
+
+;; Tests:
+(check-expect (bst-add
+               (make-node 4 "bears" empty empty)
+               4 "mean")
+              (make-node 4 "mean" empty empty))
+(check-expect (bst-add
+               (make-node 3 "toothy"
+                          (make-node 2 "fan" empty empty)
+                          (make-node 98 "billy" empty empty))
+               92 "binder")
+              (make-node 3 "toothy"
+               (make-node 2 "fan" empty empty)
+               (make-node 98 "billy"
+                          (make-node 92 "binder" empty empty) empty)))
+;; 1D
+;; (bst->al bst) produces an association list that contains all entries
+;;   in the tree, sorted by their keys in ascending order
+;; bst->al: BST -> AL
+;; Examples:
+(check-expect (bst->al (make-node 5 "5"
+                                  (make-node 2 "2" empty empty)
+                                  empty))
+              '((2 "2")(5 "5")))
+(check-expect (bst->al (make-node 2 "bears" empty empty))
+              '((2 "bears")))
+(check-expect (bst->al empty) empty)
+
+(define (bst->al bst)
+  (cond
+    [(empty? bst) empty]
+    [else
+      (sort-me (cons (cons (node-key bst)
+                          (cons (node-val bst) empty))
+                    (cond
+                       [(node? (node-left bst))
+                        (bst->al (node-left bst))]
+                       [(node? (node-right bst))
+                        (bst->al (node-right bst))]
+                       [else empty])))]))
+
+(define (sort-me blst)
+  (cond
+    [(empty? blst) empty]
+    [else
+     (insert (first blst)(sort-me (rest blst)))]))
+
+(define (insert n slon)
+  (cond
+    [(empty? slon)(cons n empty)]
+    [(<= (first n)(first (first slon)))
+     (cons n slon)]
+    [else (cons (first slon)
+                (insert n (rest slon)))]))
+
+;; Tests:
+(check-expect (bst->al (make-node 5 "5" empty
+                                  (make-node 10 "timmy" empty empty)))
+              '((5 "5")(10 "timmy")))
+(check-expect (bst->al (make-node 6 "2"
+                                  (make-node -19 "goose" empty empty)
+                    (make-node 29 "tigers" empty empty)))
+              '((-19 "goose")(6 "2")))
+(check-expect (bst->al (make-node 21 "branches" empty
+                    (make-node 36 "grass" empty
+                               (make-node 51 "rocks" empty empty))))
+              '((21 "branches")(36 "grass")(51 "rocks")))
+
+;; 1E
+;; (bst-value-list bst) produces a list containing all the values
+;;    stored in the BST with no duplicates
+;; bst-value-list: BST -> (listof Str)
+;; Examples:
+(check-expect (bst-value-list (make-node 5 "5"
+                                         (make-node 2 "2" empty empty)
+                           empty))
+              (list "5" "2"))
+(check-expect (bst-value-list (make-node 5 "5" empty
+                                  (make-node 10 "timmy" empty empty)))
+              (list "5" "timmy")) 
+ 
+(define (bst-value-list bst)
+  (cond
+    [(empty? bst) empty] 
+    [else
+      (unique-lst(cons (node-val bst)
+                    (cond
+                       [(node? (node-left bst))
+                        (bst-value-list (node-left bst))]
+                       [(node? (node-right bst))
+                        (bst-value-list (node-right bst))]
+                       [else empty])))]))
+
+(define (unique-lst lst)
+  (cond
+    [(empty? lst) empty]
+    [(empty? (rest lst))(cons (first lst) empty)]
+    [(string=? (first lst)(second lst))
+     (unique-lst (rest lst))]
+    [else
+     (cons (first lst)(unique-lst (rest lst)))]))
+
+;; Tests:
+(check-expect (bst-value-list (make-node 21 "branches" empty
+                    (make-node 36 "grass" empty
+                               (make-node 51 "rocks" empty empty))))
+              (list "branches" "grass" "rocks"))
+(check-expect (bst-value-list (make-node 5 "5"
+                                         (make-node 2 "5" empty empty)
+                                         empty))
+              (list "5"))

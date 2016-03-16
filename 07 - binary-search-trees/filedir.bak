@@ -1,0 +1,264 @@
+;; The first three lines of this file were inserted by DrRacket. They record metadata
+;; about the language level of this file in a form that our tools can easily process.
+#reader(lib "htdp-beginner-abbr-reader.ss" "lang")((modname filedir) (read-case-sensitive #t) (teachpacks ()) (htdp-settings #(#t constructor repeating-decimal #f #t none #f () #t)))
+(require "a7.rkt")
+;; Constant Definitions
+(define file1 (make-file "oldfile" 1000 5))
+(define file2 (make-file "newfile" 1000 55555555))
+(define dir0 (make-dir "emptydir"
+                       empty))
+(define dir1 (make-dir "onefile"
+                       (list file1)))
+(define dir2 (make-dir "twofiles"
+                       (list file1 file2)))
+(define dir2b (make-dir "twofiles"
+                       (list file1)))
+(define dir3 (make-dir "onesies"
+                      (list dir1 dir1 dir1)))
+(define fs1 (make-dir "rootdir"
+                      (list file1 dir0 dir1 dir2 dir3 file2)))
+(define fs2 (make-dir "u"
+                      (list file2 dir0 dir1)))
+(define filename "")
+
+;; 2A
+;; (define-struct file (name size timestamp))
+;; A File is a (make-file Str Nat Nat)
+
+(define (my-file-fn fn)
+  (... (file-name fn) ...
+       (file-size fn) ...
+       (file-timestamp fn) ...))       
+
+;; (define-struct dir (name contents))
+;; A Dir is a (make-dir Str FDList)
+
+(define (my-dir-fn fn)
+  (... (dir-name fn) ...
+       (dir-contents fn) ...))
+
+;; A FileSystem is a:
+;; * Dir
+
+;; A FileDir is one of:
+;; * File
+;; * Dir
+
+(define (my-filedir-fn fn)
+  (cond
+    [(file? fn) ...]
+    [(dir? fn) ...]))
+
+;; A FDList is one of:
+;; * empty
+;; * (cons FileDir FDList)
+
+(define (my-fdlist fn)
+  (cond
+    [(empty? fn) ...]
+    [else (... (first fn)
+               (my-fdlist (rest fn)))])) 
+
+;; 2B
+;; (count-files fsys) produces the total number of files in the entire
+;;   file system tree
+;; requires: parameter must be a dir
+;; count-files: Dir -> Num
+;; Examples:
+(check-expect (count-files dir0) 0)
+(check-expect (count-files dir3) 3)
+(check-expect (count-files fs1) 8)
+
+(define (count-files fsys)
+  (cond
+    [(file? fsys)(file-fn fsys)] 
+    [(dir? fsys)(dir-fn (dir-contents fsys))]))
+
+(define (file-fn fsys) 1)
+
+(define (dir-fn fsys)
+  (cond
+    [(empty? fsys) 0] 
+    [else
+     (+ (count-files (first fsys))
+        (dir-fn (rest fsys)))]))
+
+;; Tests:
+(check-expect (count-files file1) 1)
+(check-expect (count-files dir2b) 1)
+(check-expect (count-files fs1) 8)
+
+;; 2C
+;; (empty-dir-exist? fsys) produces true if an empty directory exists
+;;   anywhere in the filesystem tree and produces false otherwise
+;; requires: parameter must be a dir
+;; empty-dir-exist? Dir -> Bool
+;; Examples:
+(check-expect (empty-dir-exist? dir0) true)
+(check-expect (empty-dir-exist? fs1) false)
+
+(define (empty-dir-exist? fsys)
+  (cond
+    [(file? fsys)(file-bool fsys)] 
+    [(dir? fsys)(dir-bool (dir-contents fsys))]))
+
+(define (file-bool fsys) false)
+
+(define (dir-bool fsys)
+  (cond
+    [(empty? fsys) true] 
+    [else
+     (and (empty-dir-exist? (first fsys))
+          (dir-bool (rest fsys)))]))
+
+;; Tests:
+(check-expect (empty-dir-exist? dir2b) false)
+(check-expect (empty-dir-exist? fs2) false)
+
+;; 2D
+;; (oldest-file fsys) produces the filename of the oldest file
+;; oldest-file: Dir -> Str
+;; Examples:
+(check-expect (oldest-file fs2) "oldfile")
+(check-expect (oldest-file fs1) "oldfile") 
+
+(define (oldest-file fsys)
+  (find-file (holder fsys) filename))
+
+(define (holder fsys)
+  (cond
+    [(empty? fsys) empty]  
+    [else
+     (old-file (dir-contents fsys))]))
+
+(define (old-file lst)
+  (cond
+    [(empty? lst) empty]
+    [(file? (first lst))
+     (cons (cons (file-name (first lst))
+                 (cons (file-timestamp (first lst)) empty))
+           (old-file (rest lst)))]
+    [(dir? (first lst))
+     (cond
+       [(empty? (dir-contents (first lst)))
+        (old-file (rest lst))] 
+       [else (holder (first lst))])])) 
+
+(define (find-file lst fn)
+  (cond
+    [(empty? lst)(first fn)]
+    [(empty? (rest lst))
+     (cond
+       [(= (second (first lst))(second fn))
+        (first (first lst))])]
+    [(< (second (first lst))(second (second lst)))
+     (cond
+       [(< (second (first lst))(second fn))
+        ]
+    [(>= (second (first lst))(second (second lst)))
+     (find-file (rest lst)(second lst))])) 
+
+;; (oldest-file dir1) 
+
+;; Tests:
+(check-expect (oldest-file (make-dir "onefile"
+                       (list (make-file "twofile" 1000 5)
+                             (make-file "threefile" 1000 3)
+                             (make-file "fourfile" 1000 1))))
+              "fourfile")
+#|(check-expect (oldest-file (make-dir "onefile"
+                       (list (make-file "twofile" 1000 29)
+                             (make-file "threefile" 1000 200)
+                             (make-file "fourfile" 1000 300000))))
+              "twofile")
+;; make this test work|#
+
+;; 2E
+;; (list-file-paths fsys) produces a list that contains the hierarchial
+;;   names for all of the files in the entire file system
+;; list-file-paths: Dir -> (listof Str)
+;; Examples:
+(check-expect (list-file-paths dir2b)
+              (list "twofiles/oldfile")) 
+(check-expect (list-file-paths dir0)
+              empty)
+
+(define (list-file-paths fsys)
+  (cond 
+    [(empty? (dir-contents fsys)) empty]
+    [else (file-path (dir-name fsys)(dir-contents fsys))]))
+
+(define (file-path str lst)
+  (cond
+    [(empty? lst) empty]
+    [(file? (first lst))
+     (cons (string-append str "/" (file-name (first lst)))
+           (file-path str (rest lst)))]
+    [(dir? (first lst))
+     (cond 
+       [(empty? (dir-contents (first lst)))
+        (file-path str (rest lst))]
+       [else
+        (file-path (string-append str "/" (dir-name (first lst)))
+                   (dir-contents (first lst)))])]))   
+
+;; Tests:
+(check-expect (list-file-paths fs2)
+              (list "u/newfile" "u/onefile/oldfile"))
+(check-expect (list-file-paths fs1)
+              (list "rootdir/oldfile" "rootdir/onefile/oldfile"))
+
+;; 2F
+;; (backup-fs fsys ts) produces a FileSystem containing only the files
+;;   whose timestamp is strictly less than the given ts parameter
+;;   value
+;; backup-fs: Dir Nat -> Dir
+;; Examples:
+(check-expect (backup-fs dir1 6)(make-dir "onefile" (list file1)))
+(check-expect (backup-fs dir2 6)(make-dir "twofiles" (list file1)))
+
+(define (backup-fs fsys ts)
+  (cond
+    [(empty? (dir-contents fsys)) empty]
+    [else
+     (make-dir (dir-name fsys)
+               (backup-me (dir-contents fsys) ts))]))
+
+(define (backup-me lst ts)
+  (cond
+    [(empty? lst) empty]
+    [(file? (first lst))
+     (cond
+       [(< (file-timestamp (first lst)) ts)
+        (cons (first lst)(backup-me (rest lst) ts))]
+       [else
+        (backup-me (rest lst) ts)])]
+    [(dir? (first lst))
+     (cond
+       [(empty? (dir-contents (first lst)))
+        (backup-me (rest lst) ts)]
+       [(false? (valid-dir? (first lst) ts))
+        (backup-me (rest lst) ts)] 
+       [else
+        (cons (first lst)(backup-me (rest lst) ts))])]))
+
+(define (valid-dir? lst ts)
+  (cond
+    [(empty? (dir-contents lst)) false]
+    [else
+     (testing (dir-contents lst) ts)]))
+
+(define (testing lst ts)
+  (cond
+    [(empty? lst) true]
+    [(file? (first lst)) 
+     (cond
+       [(< (file-timestamp (first lst)) ts)
+        (testing (rest lst) ts)]
+       [else false])]
+    [(dir? (first lst))
+     (valid-dir? (first lst) ts)]))  
+
+;; Tests:
+(check-expect (backup-fs dir0 6) empty)
+(check-expect (backup-fs fs2 10)(make-dir "u" (list dir1)))
