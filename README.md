@@ -10,8 +10,8 @@ Here you find different programs which are seperated into 10 different categorie
 - 06. review of structures and recursions in complicated lists
 - 07. binary search trees: manipulating key, values
 - 08. introduction to local definitions 
-- 09. local, lambda, abstract list functions
-- 10. quicksort, bubblesort
+- 09. local, lambda, sorting and abstract list functions
+- 10. graphs, backtracking
 
 NOTE: Every program definition follows a strict design recipe for function readability:
      (purpose, contract, requirements, examples, and tests)
